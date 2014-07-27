@@ -44,9 +44,20 @@ int main(int argc, const char * argv[]) {
         fd = open(argv[1], O_RDONLY);
         wd = open(argv[2], O_CREAT|O_WRONLY, S_IRUSR | S_IWUSR);
         buf = (char *)calloc(BUF_LEN, 1);
-        
+
+	unsigned long holesize = 0;
         while((rv = read(fd,buf, BUF_LEN))) {
-            write(wd,buf,rv);
+		for(int i=0; i < rv; i++) {
+			if(buf[i] == '\0') {
+				holesize++;
+			} else if(holesize > 0) {
+				lseek(wd, holesize, SEEK_CUR);
+				write(wd, &buf[i], 1);
+				holesize=0;
+			} else {
+				write(wd, &buf[i], 1);
+			}
+		}
         }
         
         close(wd);
